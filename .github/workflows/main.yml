@@ -1,0 +1,64 @@
+name: JS CI and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs: #(Define o que você quer executar);
+  build-and-deploy:
+    runs-on: windows-latest  # Usando Windows como ambiente
+
+    env:
+      SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_USER: deployuser
+      SERVER_HOST: 154.12.254.55  # Substitua pelo seu IP
+      PROJECT_PATH: C:\opt\projetos\js-app  # Caminho no estilo Windows
+
+    steps: #(Define passo a passo tudo o que deve ser realizado dentro do Jobs);
+    
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Passo 2: Configurar Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16'  # Ajuste a versão conforme necessário
+
+      # Passo 3: Instalar dependências
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      # Passo 4: Rodar testes com Jest
+      - name: Run Tests
+        run: |
+          npm test
+
+      # Passo 5: Configurar o agente SSH
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Passo 6: Enviar arquivos para o servidor
+      - name: Copy Files to Server
+        run: |
+          scp -o StrictHostKeyChecking=no `
+            src\math.js `
+            tests\ `
+            package.json `
+            docker-compose.yml `
+            Dockerfile `
+            ${env:SERVER_USER}@${env:SERVER_HOST}:C:\opt\projetos\js-app\${env:GITHUB_REF_NAME}
+
+      # Passo 7: Deploy no servidor
+      - name: Deploy Application
+        run: |
+          ssh -o StrictHostKeyChecking=no ${env:SERVER_USER}@${env:SERVER_HOST} << 'EOF'
+            cd C:\opt\projetos\js-app\${env:GITHUB_REF_NAME}
+            docker-compose down
+            docker-compose up -d --build
+          EOF
