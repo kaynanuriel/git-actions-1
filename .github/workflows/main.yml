@@ -21,29 +21,29 @@ jobs: #(Define o que você quer executar);
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Passo 2: Configurar Node.js
+      #Configura o Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '16'  # Ajuste a versão conforme necessário
 
-      # Passo 3: Instalar dependências
+      #Instala as dependências necessárias
       - name: Install Dependencies
         run: |
           npm install
 
-      # Passo 4: Rodar testes com Jest
+      # Automatiza os Testes
       - name: Run Tests
         run: |
           npm test
 
-      # Passo 5: Configurar o agente SSH
+      #Configuração da chave ssh do github do usuário
       - name: Setup SSH Agent
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Passo 6: Enviar arquivos para o servidor
+      # Enviar arquivos para o servidor
       - name: Copy Files to Server
         run: |
           scp -o StrictHostKeyChecking=no `
@@ -54,7 +54,7 @@ jobs: #(Define o que você quer executar);
             Dockerfile `
             ${env:SERVER_USER}@${env:SERVER_HOST}:C:\opt\projetos\js-app\${env:GITHUB_REF_NAME}
 
-      # Passo 7: Deploy no servidor
+      # Faz Deploy para o servidor
       - name: Deploy Application
         run: |
           ssh -o StrictHostKeyChecking=no ${env:SERVER_USER}@${env:SERVER_HOST} << 'EOF'
